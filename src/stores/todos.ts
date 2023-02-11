@@ -7,19 +7,19 @@ export const useTodoStore = defineStore("todoStore", () => {
   const todos = ref<Todo[]>([
     {
       id: uuidv4(),
-      name: "Task 1",
+      name: "Learn Nuxt 3",
       progress: 25,
       priority: "High",
     },
     {
       id: uuidv4(),
-      name: "Task 2",
+      name: "Clean Dishes",
       progress: 50,
       priority: "Moderate",
     },
     {
       id: uuidv4(),
-      name: "Task 3",
+      name: "Check Emails",
       progress: 75,
       priority: "Low",
     },
@@ -38,11 +38,22 @@ export const useTodoStore = defineStore("todoStore", () => {
     const todo = todos.value.find((todo) => todo.id === id);
     if (todo) todo.progress = 100;
   }
+
+  function addTodo(todo: Todo) {
+    todos.value.push(todo);
+  }
+
+  function editTodo(todoArg: Todo) {
+    let todoIndex = todos.value.findIndex((todo) => todo.id === todoArg.id);
+    todos.value[todoIndex] = todoArg;
+  }
   return {
     todos,
     getDoneTodoCount,
     getTotalTodoCount,
     markTodoCompleted,
     deleteTodo,
+    addTodo,
+    editTodo,
   };
 });

@@ -1,15 +1,35 @@
 <script setup lang="ts">
-import { useTodoStore } from "@/stores/task";
+import { useTodoStore } from "@/stores/todos";
 import { storeToRefs } from "pinia";
-import { ref, computed } from "vue";
+import type { Todo } from "@/types";
+import { ref } from "vue";
+import TodoList from "@/components/TodoList.vue";
+import TodoForm from "@/components/TodoForm.vue";
+
+type Mode = "list" | "add" | "edit";
+
+const mode = ref<Mode>("list");
+
+const editingTodo = ref<Todo>();
 
 const todoStore = useTodoStore();
 const todoList = storeToRefs(todoStore).todos;
 
-const searchText = ref<string>("");
-const filteredTodos = computed(() => {
-  return todoList.value.filter((todo) => todo.name.includes(searchText.value));
-});
+const editTodo = (todo: Todo) => {
+  editingTodo.value = todo;
+  mode.value = "edit";
+};
+
+const editTodoStore = (todo: Todo) => {
+  todoStore.editTodo(todo);
+  mode.value = "list";
+  editingTodo.value = undefined;
+};
+
+const addTodo = (todo: Todo) => {
+  todoStore.addTodo(todo);
+  mode.value = "list";
+};
 </script>
 <template>
   <main class="container">
@@ -21,91 +41,29 @@ const filteredTodos = computed(() => {
           </ul>
           <ul>
             <li>
-              <button>Add New Todo</button>
+              <button v-if="mode === 'list'" @click="mode = 'add'">
+                Add New Todo
+              </button>
             </li>
           </ul>
         </nav>
       </header>
-      <!-- <form>
-        <label for="name">
-          <input
-            type="text"
-            name="name"
-            id="name"
-            placeholder="Task Name"
-            required
-          />
-        </label>
-        <button type="submit">Add</button>
-      </form> -->
-      <input
-        type="search"
-        name="search"
-        id="search"
-        placeholder="Search A Todo"
-        v-model="searchText"
+      <TodoList
+        v-if="mode === 'list'"
+        :todos="todoList"
+        @edit-todo="editTodo"
       />
-      <table role="grid">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Name</th>
-            <th scope="col">Progress</th>
-            <th scope="col">Priority</th>
-            <th scope="col">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(todo, index) in filteredTodos">
-            <th scope="row">{{ index + 1 }}</th>
-            <td>{{ todo.name }}</td>
-            <td>
-              <progress :value="todo.progress" max="100"></progress>
-            </td>
-            <td>
-              <kbd>{{ todo.priority }}</kbd>
-            </td>
-            <td>
-              <span
-                role="button"
-                class="outline"
-                data-tooltip="Delete"
-                @click="todoStore.deleteTodo(todo.id)"
-                >🗑️</span
-              >
-              <span role="button" class="outline" data-tooltip="Edit">✏️</span>
-              <span
-                role="button"
-                class="outline"
-                data-tooltip="Mark As Completed"
-                @click="todoStore.markTodoCompleted(todo.id)"
-                >✅</span
-              >
-            </td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <th scope="row">Total</th>
-            <td>
-              {{ todoStore.getDoneTodoCount }}/{{ todoStore.getTotalTodoCount }}
-            </td>
-            <td>
-              <progress
-                :value="
-                  todoStore.getTotalTodoCount > 0
-                    ? Math.floor(
-                        (100 * todoStore.getDoneTodoCount) /
-                          todoStore.getTotalTodoCount
-                      )
-                    : 0
-                "
-                max="100"
-              ></progress>
-            </td>
-          </tr>
-        </tfoot>
-      </table>
+      <TodoForm
+        v-else
+        @add-todo="addTodo"
+        @edit-todo="editTodoStore"
+        :todo="editingTodo"
+        :mode="mode"
+        @cancel-todo="
+          mode = 'list';
+          editingTodo = undefined;
+        "
+      />
       <p v-if="todoStore.getDoneTodoCount === todoStore.getTotalTodoCount">
         <ins>All Todos Are Done 👏</ins>
       </p>
